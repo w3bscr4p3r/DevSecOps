@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  mysql_db:
+    image: mysql:8.0
+    container_name: mysql_prod
+    env_file: .env
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/conf/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./backups:/backups:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  backup_manager:
+    build: ./backup
+    container_name: backup_system
+    env_file: .env
+    volumes:
+      - ./backups:/backups
+      - ./backup/logs:/app/logs
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+
+  monitoring:
+    image: python:3.9-slim
+    container_name: backup_monitor
+    volumes:
+      - ./monitoring:/app
+    command: watch -n 3600 python /app/disk_check.py
