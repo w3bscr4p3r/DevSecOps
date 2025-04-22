@@ -1,0 +1,4 @@
+sast:
+  excluded_dirs: ["tests", "venv"]
+dast:
+  user_agent: "SAST-DAST-Toolkit/1.0"
