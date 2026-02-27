@@ -1,105 +1,156 @@
+import csv
+import os
+
 import PySimpleGUI as sg
 import requests as rq
 import shodan
-import csv
 
-api_endpoint = 'https://api.abuseipdb.com/api/v2/check/'
+API_ENDPOINT = 'https://api.abuseipdb.com/api/v2/check/'
+ABUSEIPDB_KEY = os.getenv('ABUSEIPDB_KEY')
+SHODAN_KEY = os.getenv('SHODAN_KEY')
+REQUEST_TIMEOUT_SECONDS = 10
+ABUSE_THRESHOLD = 30
 
-headers = {
-    'Accept': 'application/json',
-    'Key': 'key_abuseipdb'
-}
 
-key_shodan = 'key_shodan'
+def build_window():
+    sg.theme('Dark Blue 3')
+    layout = [
+        [sg.Text('Origem: ')],
+        [sg.Input(key='Origem'), sg.FileBrowse()],
+        [sg.Text('Destino: ')],
+        [sg.Input(key='Destino'), sg.FileBrowse()],
+        [
+            sg.Button('Pesquisar', key='Search'),
+            sg.Button('Limpar', key='Clear'),
+            sg.Button('Sair', key='Quit'),
+        ],
+    ]
+    return sg.Window('Pesquisador de IPs maliciosos by Daniel M. Alves', layout)
 
-api = shodan.Shodan(key_shodan)
 
-csv_rows = []
-vulns = ''
+def get_shodan_client():
+    if not SHODAN_KEY:
+        raise ValueError('Variável SHODAN_KEY não configurada no ambiente.')
+    return shodan.Shodan(SHODAN_KEY)
 
-sg.theme('Dark Blue 3')
 
-layout = [[sg.Text('Origem: ')],
-          [sg.Input(key='Origem'), sg.FileBrowse()],
-          [sg.Text('Destino: ')],
-          [sg.Input(key='Destino'), sg.FileBrowse()],
-          [sg.Button('Pesquisar', key='Search'), sg.Button('Limpar', key='Clear'), sg.Button('Sair', key='Quit')]]
+def get_abuse_headers():
+    if not ABUSEIPDB_KEY:
+        raise ValueError('Variável ABUSEIPDB_KEY não configurada no ambiente.')
+    return {
+        'Accept': 'application/json',
+        'Key': ABUSEIPDB_KEY,
+    }
 
-window = sg.Window('Pesquisador de IPs maliciosos by Daniel M. Alves', layout)
 
-while True:
-    event, values = window.read()
+def read_targets(source_path):
+    targets = []
+    with open(source_path, 'r', newline='', encoding='utf-8') as source_file:
+        reader = csv.reader(source_file, delimiter=';')
+        next(reader, None)  # pular cabeçalho
+        for row in reader:
+            if row and row[0].strip():
+                targets.append(row[0].strip())
+    return targets
 
-    if event == sg.WINDOW_CLOSED or event == 'Quit':
-        break
-    elif event == 'Clear':
-        window['Origem'].update('')
-        window['Destino'].update('')
 
-    else:
+def evaluate_ip(target, shodan_api, abuse_headers):
+    response = rq.get(
+        API_ENDPOINT,
+        headers=abuse_headers,
+        params={'ipAddress': target},
+        timeout=REQUEST_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    response_data = response.json().get('data', {})
 
-        origem = values['Origem']
-        destino = values['Destino']
+    host = shodan_api.host(target)
 
-        with open(f'{origem}', 'r') as origem:
-            csvreader = csv.reader(origem, delimiter=';')
-            for row in csvreader:
-                csv_rows.append(row)
+    score = response_data.get('abuseConfidenceScore', 0)
+    is_malicious = 'Sim' if score >= ABUSE_THRESHOLD else 'Não'
 
-        with open(f'{destino}', 'w') as destino:
+    hostnames = response_data.get('hostnames') or []
+    hostname = hostnames[0] if hostnames else response_data.get('domain') or 'sem informação'
 
-            destino.write(
-                'Malicioso;IP;DNS;Open Ports;ISP;City;Country;Vulns\n')
+    ports = host.get('ports') or []
+    ports_out = str(ports) if ports else 'sem informação'
 
-            for item in csv_rows[1:]:
+    isp = response_data.get('isp') or 'sem informação'
 
-                target = item[0]  
+    city = host.get('city') or 'sem informação'
 
-                response = rq.get(api_endpoint, headers=headers,
-                                  params={'ipAddress': target})
+    vulns = host.get('vulns') or []
+    vulns_out = str(vulns) if vulns else 'sem informação'
 
-                try:
-                    host = api.host(target)
+    country = response_data.get('countryCode') or 'sem informação'
 
-                    response_data = response.json()['data']
+    return [is_malicious, target, hostname, ports_out, isp, city, country, vulns_out]
 
-                    if response_data['abuseConfidenceScore'] >= 30:
-                        is_malicious = 'Sim'
-                    else:
-                        is_malicious = 'Não'
 
-                    if len(response_data['hostnames']) >= 1:
-                        hostname = response_data['hostnames'][0]
-                    else:
-                        hostname = response_data['domain']
+def analyze_ips(source_path, destination_path):
+    shodan_api = get_shodan_client()
+    abuse_headers = get_abuse_headers()
+    targets = read_targets(source_path)
 
-                    if len(host['ports']) >= 1:
-                        ports = str(host['ports'])
-                    else:
-                        ports = 'sem informação'
+    with open(destination_path, 'w', newline='', encoding='utf-8') as output_file:
+        writer = csv.writer(output_file, delimiter=';')
+        writer.writerow(['Malicioso', 'IP', 'DNS', 'Open Ports', 'ISP', 'City', 'Country', 'Vulns'])
 
-                    isp = response_data['isp']
+        for target in targets:
+            try:
+                row = evaluate_ip(target, shodan_api, abuse_headers)
+            except (rq.RequestException, shodan.APIError, ValueError, KeyError, TypeError):
+                row = [
+                    'sem informação',
+                    target,
+                    'sem informação',
+                    'sem informação',
+                    'sem informação',
+                    'sem informação',
+                    'sem informação',
+                    'sem informação',
+                ]
+            writer.writerow(row)
 
-                    if len(host['city']) >= 1:
-                        city = str(host['city'])
-                    else:
-                        city = 'sem informação'
 
-                    if len(host['vulns']) >= 1:
-                        vulns = str(host['vulns'])
-                    else:
-                        vulns = 'sem informação'
+def main():
+    window = build_window()
 
-                    country = response_data['countryCode']
+    while True:
+        event, values = window.read()
 
-                    destino.write(is_malicious+';'+target+';'+hostname +
-                                  ';'+ports+';'+isp+';'+city+';'+country+';'+vulns+'\n')
+        if event == sg.WINDOW_CLOSED or event == 'Quit':
+            break
 
-                except:
+        if event == 'Clear':
+            window['Origem'].update('')
+            window['Destino'].update('')
+            continue
 
-                    destino.write(
-                        'sem informação;'+target+';sem informação;sem informação;sem informação;sem informação;sem informação;'+vulns+'\n')
+        if event != 'Search':
+            continue
 
-        sg.popup('IPs analisados com sucesso!!')
+        origem = values.get('Origem', '').strip()
+        destino = values.get('Destino', '').strip()
 
-window.close()
+        if not origem or not destino:
+            sg.popup_error('Selecione os arquivos de origem e destino antes de pesquisar.')
+            continue
+
+        if not os.path.isfile(origem):
+            sg.popup_error('Arquivo de origem inválido.')
+            continue
+
+        try:
+            analyze_ips(origem, destino)
+            sg.popup('IPs analisados com sucesso!!')
+        except ValueError as error:
+            sg.popup_error(str(error))
+        except OSError as error:
+            sg.popup_error(f'Erro ao processar arquivo: {error}')
+
+    window.close()
+
+
+if __name__ == '__main__':
+    main()
