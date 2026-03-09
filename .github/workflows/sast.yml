@@ -1,0 +1,55 @@
+name: SAST Scan
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+jobs:
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 2  # Otimização diff-based scanning
+    
+    - name: Cache Python
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Bandit SAST (Python)
+      uses: scalastic/python-bandit-scan@v3
+      with:
+        path: src/
+        level: HIGH  # Threshold configurável
+        output: bandit.sarif
+        severity: HIGH,MEDIUM
+    
+    - name: Semgrep (Multi-lang)
+      uses: returntocorp/semgrep-action@v1
+      with:
+        config: >-
+          p/python
+          p/secrets
+          p/r2c-security-audit
+        generate_sarif: true
+    
+    - name: Upload SARIF
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: |
+          bandit.sarif
+          semgrep.sarif
+        category: sast
