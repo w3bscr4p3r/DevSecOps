@@ -1,0 +1,20 @@
+name: Security Scan
+on: [pull_request, push]
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: [python, javascript]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bandit SAST
+        uses: scalastic/python-bandit-scan@v3
+        with:
+          path: . # Ajuste para seu código
+      - name: Trivy Vulnerability Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
