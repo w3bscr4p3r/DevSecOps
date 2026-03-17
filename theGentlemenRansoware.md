@@ -1,6 +1,6 @@
 # 🚨 ATENÇÃO: The Gentlemen Ransomware – A Nova Ameaça Global que Atacou o Brasil
 
-**Por [Seu Nome] | Engenheiro Sênior de Cibersegurança | ThreatFusion OSINT**
+**Por Daniel Alves | Cyber Security Analyst**
 
 Você já ouviu falar de um grupo de ransomware que surgiu do nada em 2025 e, em poucos meses, já comprometeu 47+ organizações em 17 países? Pois é, **The Gentlemen** não é brincadeira. E o pior: eles acabaram de atacar a **UniFil no Brasil** em fevereiro de 2026.
 
@@ -96,23 +96,4 @@ Integre no seu ThreatFusion OSINT ⚡
 👉 **ThreatFusion OSINT** pronto para monitorar The Gentlemen
 ```
 
-**Você já detectou atividade suspeita do The Gentlemen? Compartilhe nos comentários! 👇**
-
-***
-
-📌 **Conecte-se para threat intel em tempo real:**
-🔗 [ThreatFusion OSINT GitHub]
-💬 Telegram Alerts | Slack Integration
-
 #Ransomware #TheGentlemen #ThreatIntelligence #Ciberseguranca #OSINT #UniFil #ThreatFusion
-
-Citações:
-[1] Escrever e publicar artigos no LinkedIn | Ajuda do LinkedIn https://www.linkedin.com/help/linkedin/answer/a518834/como-publicar-artigos-no-linkedin?lang=pt
-[2] Dicas para escrever artigos no LinkedIn | Ajuda do LinkedIn https://www.linkedin.com/help/linkedin/answer/a520692/dicas-para-redigir-artigos-no-linkedin?lang=pt
-[3] Como publicar bons artigos no LinkedIn: Tutorial para ... https://www.youtube.com/watch?v=pAs_fFw81HE
-[4] Como escrever artigos no LinkedIN e se posicionar ... - Eventos https://eventos.sp.senac.br/atividade/como-escrever-artigos-no-linkedin-e-se-posicionar-no-mercado-de-trabalho/
-[5] As dicas dos Top Voices para você escrever artigos de ... https://pt.linkedin.com/pulse/dicas-dos-top-voices-para-voc%C3%AA-escrever-artigos-de-sucesso-de-souza
-[6] Como publicar artigo no LinkedIn https://ricardodalbosco.com/blog/como-publicar-artigo-no-linkedin/
-[7] Artigos para LinkedIn: Guia para iniciantes! https://postgrain.com/blog/artigos-para-linkedin/
-[8] Artigos no LinkedIn: aprenda como e por que publicar https://eurofarma.com.br/artigos/artigos-no-linkedin-aprenda-como-e-por-que-publicar
-[9] Como publicar artigos no Linkedin - Versão 2021 - Tutorial https://www.youtube.com/watch?v=h_frlCOgBTs
