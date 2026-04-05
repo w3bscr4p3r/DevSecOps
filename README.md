@@ -87,7 +87,3 @@ python toolkit.py --dast http://localhost:8000
 > - Fins educacionais e de pesquisa
 >
 > O uso não autorizado em sistemas de terceiros é ilegal e pode constituir crime.
-
-## Documentação Adicional
-
-- [The Gentlemen Ransomware](theGentlemenRansoware.md) - Estudo de caso sobre ransomware
