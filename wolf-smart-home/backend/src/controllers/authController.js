@@ -1,0 +1,11 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const { jwtSecret, jwtRefreshSecret } = require('../config/env');
+const sign = (u)=>jwt.sign({id:u._id,role:u.role,email:u.email}, jwtSecret, {expiresIn:'15m'});
+const signRefresh=(u)=>jwt.sign({id:u._id}, jwtRefreshSecret, {expiresIn:'7d'});
+exports.register = async (req,res)=>{const {name,email,password,phone}=req.body;const hash=await bcrypt.hash(password,12);const user=await User.create({name,email,password:hash,phone});res.status(201).json({id:user._id});};
+exports.login = async (req,res)=>{const {email,password}=req.body;const user=await User.findOne({email});if(!user||!(await bcrypt.compare(password,user.password)))return res.status(401).json({message:'Credenciais inválidas'});const refreshToken=signRefresh(user);user.refreshToken=refreshToken;await user.save();res.json({accessToken:sign(user),refreshToken});};
+exports.refresh = async (req,res)=>{try{const {refreshToken}=req.body;const payload=jwt.verify(refreshToken,jwtRefreshSecret);const user=await User.findById(payload.id);if(!user||user.refreshToken!==refreshToken)return res.status(401).json({message:'Refresh inválido'});res.json({accessToken:sign(user)});}catch{res.status(401).json({message:'Refresh inválido'});}};
+exports.logout = async (req,res)=>{await User.findByIdAndUpdate(req.user.id,{refreshToken:null});res.json({ok:true});};
+exports.me = async (req,res)=>{const user=await User.findById(req.user.id).select('-password -refreshToken');res.json(user);};

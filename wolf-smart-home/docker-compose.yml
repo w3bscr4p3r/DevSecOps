@@ -1,0 +1,28 @@
+services:
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes: ["./frontend:/app"]
+    command: sh -c "npm i && npm run dev -- --host"
+    ports: ["5173:5173"]
+  backend:
+    image: node:20-alpine
+    working_dir: /app
+    volumes: ["./backend:/app"]
+    command: sh -c "npm i && npm run dev"
+    environment: ["MONGO_URI=mongodb://mongodb:27017/wolf","MQTT_URL=mqtt://mqtt:1883"]
+    ports: ["4000:4000"]
+    depends_on: [mongodb,mqtt]
+  mongodb:
+    image: mongo:7
+    ports: ["27017:27017"]
+  mqtt:
+    image: eclipse-mosquitto:2
+    ports: ["1883:1883"]
+  redis:
+    image: redis:7-alpine
+  nginx:
+    image: nginx:alpine
+    volumes: ["./nginx/default.conf:/etc/nginx/conf.d/default.conf"]
+    ports: ["80:80"]
+    depends_on: [frontend,backend]
