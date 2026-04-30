@@ -1,0 +1,2 @@
+const r=require('express').Router();const auth=require('../middlewares/auth');const Device=require('../models/Device');const f=require('./crudFactory')(Device);const mqttService=require('../services/mqttService');
+r.get('/',auth,f.list);r.post('/',auth,f.create);r.put('/:id',auth,f.update);r.post('/:id/control',auth,async(req,res)=>{const d=await Device.findById(req.params.id);mqttService.publish(`${d.topic}/set`, JSON.stringify(req.body));res.json({ok:true});});module.exports=r;
