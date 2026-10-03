@@ -29,13 +29,13 @@ def build_window():
 
 
 def get_shodan_client():
-    if not SHODAN_KEY:
+    if not SHODAN_KEY or SHODAN_KEY in {'YOUR_API_KEY', 'YOUR_SHODAN_KEY'}:
         raise ValueError('Variável SHODAN_KEY não configurada no ambiente.')
     return shodan.Shodan(SHODAN_KEY)
 
 
 def get_abuse_headers():
-    if not ABUSEIPDB_KEY:
+    if not ABUSEIPDB_KEY or ABUSEIPDB_KEY in {'YOUR_API_KEY', 'YOUR_ABUSEIPDB_KEY'}:
         raise ValueError('Variável ABUSEIPDB_KEY não configurada no ambiente.')
     return {
         'Accept': 'application/json',
@@ -47,10 +47,14 @@ def read_targets(source_path):
     targets = []
     with open(source_path, 'r', newline='', encoding='utf-8') as source_file:
         reader = csv.reader(source_file, delimiter=';')
-        next(reader, None)  # pular cabeçalho
+        next(reader, None)
         for row in reader:
-            if row and row[0].strip():
-                targets.append(row[0].strip())
+            if not row:
+                continue
+            cleaned = [cell.strip() for cell in row if cell and cell.strip()]
+            if not cleaned:
+                continue
+            targets.append(cleaned[0])
     return targets
 
 
